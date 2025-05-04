@@ -155,6 +155,87 @@
     .playlist-item.active { background: #222; color: #fff; }
     .playlist-item:hover { background: #333; }
 
+    /* Novos estilos para compartilhamento */
+    .share-dialog {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #222;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      z-index: 1000;
+      width: 90%;
+      max-width: 400px;
+    }
+    
+    .share-dialog h3 {
+      margin-top: 0;
+      color: #fff;
+    }
+    
+    .share-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    
+    .share-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      color: #fff;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    
+    .share-icon {
+      width: 40px;
+      height: 40px;
+      background: #333;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 5px;
+    }
+    
+    .share-link {
+      width: 100%;
+      padding: 8px;
+      background: #333;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      margin-top: 10px;
+    }
+    
+    .close-share {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #aaa;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 999;
+    }
+
     @media (max-width: 400px) {
       .control-btn { width: 50px; height: 50px; }
       .control-btn .material-icons { font-size: 24px; }
@@ -190,6 +271,10 @@
         </div>
         <div class="menu-item" id="download-audio">
           <span class="material-icons">file_download</span> Baixar Capítulo
+        </div>
+        <!-- Novo item de compartilhamento -->
+        <div class="menu-item" id="share-btn">
+          <span class="material-icons">share</span> Compartilhar
         </div>
       </div>
     </div>
@@ -243,6 +328,20 @@
     </div>
   </div>
 
+  <!-- Diálogo de compartilhamento -->
+  <div class="overlay" id="share-overlay"></div>
+  <div class="share-dialog" id="share-dialog">
+    <button class="close-share" id="close-share">&times;</button>
+    <h3>Compartilhar Capítulo</h3>
+    <div class="share-options" id="share-options">
+      <!-- Opções serão preenchidas via JavaScript -->
+    </div>
+    <input type="text" class="share-link" id="share-link" readonly>
+    <button class="menu-item" style="width: 100%; margin-top: 10px;" id="copy-link">
+      <span class="material-icons">content_copy</span> Copiar Link
+    </button>
+  </div>
+
   <script>
     // Elementos do player
     const audioPlayer = document.getElementById('audio-player'),
@@ -262,7 +361,15 @@
           menu = document.getElementById('menu'),
           timerBtn = document.getElementById('timer-btn'),
           timerSubmenu = document.getElementById('timer-submenu'),
-          downloadAudioBtn = document.getElementById('download-audio');
+          downloadAudioBtn = document.getElementById('download-audio'),
+          shareBtn = document.getElementById('share-btn'),
+          shareDialog = document.getElementById('share-dialog'),
+          shareOverlay = document.getElementById('share-overlay'),
+          closeShare = document.getElementById('close-share'),
+          shareLink = document.getElementById('share-link'),
+          copyLinkBtn = document.getElementById('copy-link'),
+          shareOptions = document.getElementById('share-options'),
+          coverImage = document.getElementById('cover-image');
 
     let currentIndex = 0, 
         isPlaying = false, 
@@ -328,6 +435,85 @@
       audioPlayer.paused ? audioPlayer.play() : audioPlayer.pause();
     }
 
+    // Funções de compartilhamento
+    function showShareDialog() {
+      const currentTrack = tracks[currentIndex];
+      const trackUrl = currentTrack.dataset.src;
+      const trackTitle = currentTrack.dataset.title;
+      
+      shareLink.value = trackUrl;
+      shareOverlay.style.display = 'block';
+      shareDialog.style.display = 'block';
+      
+      // Limpa opções anteriores
+      shareOptions.innerHTML = '';
+      
+      // Verifica se a Web Share API está disponível (mobile)
+      if (navigator.share) {
+        const nativeShare = document.createElement('div');
+        nativeShare.className = 'share-option';
+        nativeShare.innerHTML = `
+          <div class="share-icon">
+            <span class="material-icons">share</span>
+          </div>
+          <span>Compartilhar</span>
+        `;
+        nativeShare.addEventListener('click', async () => {
+          try {
+            await navigator.share({
+              title: trackTitle,
+              text: 'Ouça este capítulo: ' + trackTitle,
+              url: trackUrl,
+            });
+            closeShareDialog();
+          } catch (err) {
+            console.log('Erro ao compartilhar:', err);
+          }
+        });
+        shareOptions.appendChild(nativeShare);
+      }
+      
+      // Opções de compartilhamento para desktop
+      const socialNetworks = [
+        { name: 'WhatsApp', icon: 'chat', color: '#25D366', url: `https://wa.me/?text=${encodeURIComponent(trackTitle + ' - ' + trackUrl)}` },
+        { name: 'Facebook', icon: 'facebook', color: '#1877F2', url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(trackUrl)}` },
+        { name: 'Twitter', icon: 'twitter', color: '#1DA1F2', url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(trackTitle)}&url=${encodeURIComponent(trackUrl)}` },
+        { name: 'Email', icon: 'email', color: '#EA4335', url: `mailto:?subject=${encodeURIComponent(trackTitle)}&body=${encodeURIComponent(trackUrl)}` }
+      ];
+      
+      socialNetworks.forEach(network => {
+        const option = document.createElement('a');
+        option.className = 'share-option';
+        option.href = network.url;
+        option.target = '_blank';
+        option.innerHTML = `
+          <div class="share-icon" style="background-color: ${network.color}">
+            <span class="material-icons">${network.icon}</span>
+          </div>
+          <span>${network.name}</span>
+        `;
+        shareOptions.appendChild(option);
+      });
+    }
+    
+    function closeShareDialog() {
+      shareOverlay.style.display = 'none';
+      shareDialog.style.display = 'none';
+      menu.style.display = 'none';
+    }
+    
+    function copyToClipboard() {
+      shareLink.select();
+      document.execCommand('copy');
+      
+      // Feedback visual
+      const originalText = copyLinkBtn.innerHTML;
+      copyLinkBtn.innerHTML = '<span class="material-icons">check</span> Link copiado!';
+      setTimeout(() => {
+        copyLinkBtn.innerHTML = originalText;
+      }, 2000);
+    }
+
     // Event Listeners
     menuBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -386,6 +572,18 @@
       
       menu.style.display = 'none';
     });
+
+    // Compartilhamento
+    shareBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!audioPlayer.src) return;
+      
+      showShareDialog();
+    });
+    
+    closeShare.addEventListener('click', closeShareDialog);
+    shareOverlay.addEventListener('click', closeShareDialog);
+    copyLinkBtn.addEventListener('click', copyToClipboard);
 
     // Controles principais do player
     playBtn.addEventListener('click', playPause);
