@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Player de Áudio Responsivo</title>
+  <title>Player de Áudio Simplificado</title>
   <link rel="icon" id="favicon" href="https://live.staticflickr.com/65535/54488171468_d37b7e80c9_n.jpg" sizes="300x300" type="image/jpeg">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
   <style>
     body {
@@ -37,9 +38,64 @@
       flex-direction: column; align-items: center;
       box-shadow: 0 4px 12px rgba(255,255,255,0.1);
     }
+    .track-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 15px;
+    }
     .track-title {
       font-size: 20px; font-weight: bold;
-      margin-bottom: 15px; text-align: center;
+      text-align: center;
+      flex: 1;
+    }
+    .menu-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 5px 10px;
+      margin-left: 10px;
+    }
+    .menu {
+      position: absolute;
+      background: #222;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      z-index: 100;
+      display: none;
+      right: 20px;
+      max-width: 300px;
+    }
+    .menu-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .menu-item:hover {
+      background: #444;
+    }
+    .submenu {
+      display: none;
+      padding-left: 15px;
+      border-left: 1px solid #444;
+      margin-top: 5px;
+    }
+    .submenu-item {
+      padding: 6px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .submenu-item:hover {
+      background: #333;
     }
     .controls {
       display: flex; gap: 20px;
@@ -58,7 +114,10 @@
       transform: scale(1.1);
       box-shadow: 0 0 15px rgba(255,255,255,0.8);
     }
-    .control-btn svg { width: 30px; height: 30px; fill: #fff; }
+    .control-btn .material-icons { 
+      font-size: 30px; 
+      color: #fff;
+    }
 
     .progress-speed {
       display: flex; align-items: center;
@@ -99,7 +158,7 @@
 
     @media (max-width: 400px) {
       .control-btn { width: 50px; height: 50px; }
-      .control-btn svg { width: 24px; height: 24px; }
+      .control-btn .material-icons { font-size: 24px; }
       .track-title { font-size: 18px; }
     }
   </style>
@@ -113,18 +172,49 @@
   </div>
 
   <div class="player">
-    <div class="track-title" id="track-title">Selecione um Capítulo</div>
+    <div class="track-header">
+      <div class="track-title" id="track-title">Selecione um Capítulo</div>
+      <button class="menu-btn" id="menu-btn">⋮</button>
+      <div class="menu" id="menu">
+        <div class="menu-item" id="timer-btn">
+          <span class="material-icons">brightness_3</span> Timer
+        </div>
+        <div class="submenu" id="timer-submenu">
+          <div class="submenu-item" data-time="300">
+            <span class="material-icons">schedule</span> 5 minutos
+          </div>
+          <div class="submenu-item" data-time="600">
+            <span class="material-icons">schedule</span> 10 minutos
+          </div>
+          <div class="submenu-item" data-time="900">
+            <span class="material-icons">schedule</span> 15 minutos
+          </div>
+          <div class="submenu-item" data-time="1800">
+            <span class="material-icons">schedule</span> 30 minutos
+          </div>
+          <div class="submenu-item" data-time="3600">
+            <span class="material-icons">schedule</span> 1 hora
+          </div>
+          <div class="submenu-item" data-time="0">
+            <span class="material-icons">cancel</span> Cancelar
+          </div>
+        </div>
+        <div class="menu-item" id="download-audio">
+          <span class="material-icons">file_download</span> Baixar Capítulo
+        </div>
+      </div>
+    </div>
 
     <div class="controls">
       <button id="prev-btn" class="control-btn" title="Anterior">
-        <svg viewBox="0 0 24 24"><path d="M18 20l-8.5-8L18 4v16zM6 4h2v16H6V4z"/></svg>
+        <span class="material-icons">skip_previous</span>
       </button>
       <button id="play-btn" class="control-btn" title="Play/Pause">
-        <svg id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        <svg id="pause-icon" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <span class="material-icons" id="play-icon">play_arrow</span>
+        <span class="material-icons" id="pause-icon" style="display:none">pause</span>
       </button>
       <button id="next-btn" class="control-btn" title="Próxima">
-        <svg viewBox="0 0 24 24"><path d="M6 4l8.5 8L6 20V4zm9 0h2v16h-2V4z"/></svg>
+        <span class="material-icons">skip_next</span>
       </button>
     </div>
 
@@ -165,47 +255,50 @@
   </div>
 
   <script>
-    // registra o Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .catch(err => console.error('SW registro falhou:', err));
-      });
-    }
-
-    const audioPlayer        = document.getElementById('audio-player'),
-          playBtn            = document.getElementById('play-btn'),
-          prevBtn            = document.getElementById('prev-btn'),
-          nextBtn            = document.getElementById('next-btn'),
-          playIcon           = document.getElementById('play-icon'),
-          pauseIcon          = document.getElementById('pause-icon'),
-          trackTitle         = document.getElementById('track-title'),
-          coverImage         = document.getElementById('cover-image'),
-          progressBar        = document.getElementById('progress-bar'),
-          progress           = document.getElementById('progress'),
+    // Elementos do player
+    const audioPlayer = document.getElementById('audio-player'),
+          playBtn = document.getElementById('play-btn'),
+          prevBtn = document.getElementById('prev-btn'),
+          nextBtn = document.getElementById('next-btn'),
+          playIcon = document.getElementById('play-icon'),
+          pauseIcon = document.getElementById('pause-icon'),
+          trackTitle = document.getElementById('track-title'),
+          coverImage = document.getElementById('cover-image'),
+          progressBar = document.getElementById('progress-bar'),
+          progress = document.getElementById('progress'),
           currentTimeDisplay = document.getElementById('current-time'),
-          totalTimeDisplay   = document.getElementById('total-time'),
-          speedSelect        = document.getElementById('speed-select'),
-          faviconLink        = document.getElementById('favicon'),
-          tracks             = Array.from(document.querySelectorAll('.playlist-item'));
+          totalTimeDisplay = document.getElementById('total-time'),
+          speedSelect = document.getElementById('speed-select'),
+          tracks = Array.from(document.querySelectorAll('.playlist-item')),
+          menuBtn = document.getElementById('menu-btn'),
+          menu = document.getElementById('menu'),
+          timerBtn = document.getElementById('timer-btn'),
+          timerSubmenu = document.getElementById('timer-submenu'),
+          downloadAudioBtn = document.getElementById('download-audio');
 
-    let currentIndex = 0, isPlaying = false;
+    let currentIndex = 0, 
+        isPlaying = false, 
+        timerId = null;
 
+    // Funções auxiliares
     function formatTime(sec) {
       const m = Math.floor(sec/60), s = Math.floor(sec%60);
       return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
 
+    // Controles do player
     function updateMetadata() {
       const title = tracks[currentIndex].dataset.title;
       document.title = `${title} – Player de Áudio`;
       audioPlayer.playbackRate = parseFloat(speedSelect.value);
+      
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
-          title, artwork:[{src:coverImage.src,sizes:'300x300',type:'image/jpeg'}]
+          title, 
+          artwork: [{src: coverImage.src, sizes: '300x300', type: 'image/jpeg'}]
         });
         navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-        navigator.mediaSession.setActionHandler('play',  () => playPause());
+        navigator.mediaSession.setActionHandler('play', () => playPause());
         navigator.mediaSession.setActionHandler('pause', () => playPause());
         navigator.mediaSession.setActionHandler('previoustrack', () => prevBtn.click());
         navigator.mediaSession.setActionHandler('nexttrack', () => nextBtn.click());
@@ -219,6 +312,12 @@
       trackTitle.textContent = tracks[i].dataset.title;
       currentIndex = i;
       updateMetadata();
+      
+      if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+        alert("Timer cancelado devido à mudança de faixa");
+      }
     }
 
     function playPause() {
@@ -226,20 +325,99 @@
       audioPlayer.paused ? audioPlayer.play() : audioPlayer.pause();
     }
 
+    // Event Listeners
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', () => {
+      menu.style.display = 'none';
+      timerSubmenu.style.display = 'none';
+    });
+
+    // Timer functionality
+    timerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      timerSubmenu.style.display = timerSubmenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.querySelectorAll('#timer-submenu .submenu-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const seconds = parseInt(item.dataset.time);
+        
+        if (timerId) {
+          clearTimeout(timerId);
+          timerId = null;
+        }
+        
+        if (seconds > 0) {
+          timerId = setTimeout(() => {
+            audioPlayer.pause();
+            alert("Timer concluído - A reprodução foi pausada");
+            timerId = null;
+          }, seconds * 1000);
+          
+          alert(`Timer definido para ${item.textContent}`);
+        } else {
+          alert("Timer cancelado");
+        }
+        
+        menu.style.display = 'none';
+        timerSubmenu.style.display = 'none';
+      });
+    });
+
+    // Download do áudio
+    downloadAudioBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!audioPlayer.src) return;
+      
+      const track = tracks[currentIndex];
+      const link = document.createElement('a');
+      link.href = track.dataset.src;
+      link.download = `${track.dataset.title}.mp3`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      menu.style.display = 'none';
+    });
+
+    // Controles principais do player
     playBtn.addEventListener('click', playPause);
     prevBtn.addEventListener('click', () => { loadTrack((currentIndex-1+tracks.length)%tracks.length); audioPlayer.play(); });
     nextBtn.addEventListener('click', () => { loadTrack((currentIndex+1)%tracks.length); audioPlayer.play(); });
 
-    audioPlayer.addEventListener('play',  () => { isPlaying=true;  playIcon.style.display='none';  pauseIcon.style.display='inline'; updateMetadata(); });
-    audioPlayer.addEventListener('pause', () => { isPlaying=false; playIcon.style.display='inline'; pauseIcon.style.display='none'; updateMetadata(); });
+    audioPlayer.addEventListener('play', () => { 
+      isPlaying = true;  
+      playIcon.style.display = 'none';  
+      pauseIcon.style.display = 'inline'; 
+      updateMetadata(); 
+    });
+    
+    audioPlayer.addEventListener('pause', () => { 
+      isPlaying = false; 
+      playIcon.style.display = 'inline'; 
+      pauseIcon.style.display = 'none'; 
+      updateMetadata(); 
+    });
 
-    audioPlayer.addEventListener('loadedmetadata', () => totalTimeDisplay.textContent = formatTime(audioPlayer.duration));
+    audioPlayer.addEventListener('loadedmetadata', () => {
+      totalTimeDisplay.textContent = formatTime(audioPlayer.duration);
+    });
+    
     audioPlayer.addEventListener('timeupdate', () => {
       if (!audioPlayer.duration) return;
       progress.style.width = `${(audioPlayer.currentTime/audioPlayer.duration)*100}%`;
       currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
     });
-    audioPlayer.addEventListener('ended', () => { loadTrack((currentIndex+1)%tracks.length); audioPlayer.play(); });
+    
+    audioPlayer.addEventListener('ended', () => { 
+      loadTrack((currentIndex+1)%tracks.length); 
+      audioPlayer.play(); 
+    });
 
     progressBar.addEventListener('click', e => {
       const rect = progressBar.getBoundingClientRect();
@@ -247,7 +425,21 @@
     });
 
     speedSelect.addEventListener('change', () => updateMetadata());
-    tracks.forEach((item, idx) => item.addEventListener('click', () => { loadTrack(idx); audioPlayer.play(); }));
+    
+    tracks.forEach((item, idx) => {
+      item.addEventListener('click', () => { 
+        loadTrack(idx); 
+        audioPlayer.play(); 
+      });
+    });
+
+    // Inicialização
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .catch(err => console.error('SW registro falhou:', err));
+      });
+    }
   </script>
 </body>
 </html>
