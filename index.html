@@ -6,9 +6,6 @@
   <title>Player de Áudio</title>
   <link rel="icon" id="favicon" href="https://live.staticflickr.com/65535/54488171468_d37b7e80c9_n.jpg" sizes="300x300" type="image/jpeg">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <meta name="theme-color" content="#000000">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <style>
     body {
@@ -52,8 +49,6 @@
       font-size: 20px; font-weight: bold;
       text-align: center;
       flex: 1;
-      cursor: pointer;
-      user-select: none;
     }
     .menu-btn {
       background: none;
@@ -257,7 +252,6 @@
           playIcon = document.getElementById('play-icon'),
           pauseIcon = document.getElementById('pause-icon'),
           trackTitle = document.getElementById('track-title'),
-          coverImage = document.getElementById('cover-image'),
           progressBar = document.getElementById('progress-bar'),
           progress = document.getElementById('progress'),
           currentTimeDisplay = document.getElementById('current-time'),
@@ -281,37 +275,6 @@
       return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
 
-    // Configurar MediaSession para controle na tela bloqueada
-    function setupMediaSession() {
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.setActionHandler('play', () => {
-          audioPlayer.play();
-        });
-        
-        navigator.mediaSession.setActionHandler('pause', () => {
-          audioPlayer.pause();
-        });
-        
-        // Impedir comportamento padrão de clique no título
-        navigator.mediaSession.setActionHandler('seekto', () => {});
-        
-        // Atualizar metadados
-        updateMediaSession();
-      }
-    }
-
-    function updateMediaSession() {
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: trackTitle.textContent,
-          artist: 'Player de Áudio',
-          artwork: [
-            { src: coverImage.src, sizes: '300x300', type: 'image/jpeg' }
-          ]
-        });
-      }
-    }
-
     // Controles do player
     function updateMetadata() {
       const title = tracks[currentIndex].dataset.title;
@@ -321,13 +284,14 @@
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
           title, 
-          artist: 'Player de Áudio',
           artwork: [{src: coverImage.src, sizes: '300x300', type: 'image/jpeg'}]
         });
         navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+        navigator.mediaSession.setActionHandler('play', () => playPause());
+        navigator.mediaSession.setActionHandler('pause', () => playPause());
+        navigator.mediaSession.setActionHandler('previoustrack', () => prevBtn.click());
+        navigator.mediaSession.setActionHandler('nexttrack', () => nextBtn.click());
       }
-      
-      updateMediaSession();
     }
 
     function loadTrack(i, isAutoAdvance = false) {
@@ -385,11 +349,11 @@
       item.addEventListener('click', (e) => {
         e.stopPropagation();
         const seconds = parseInt(item.dataset.time);
-        const timeText = item.childNodes[0].nodeType === 3 ? item.childNodes[0].nodeValue : item.textContent;
+        const timeText = item.textContent.replace('schedule', '').trim();
         
         if (seconds > 0) {
           startTimer(seconds);
-          alert(`Temporizador definido para ${timeText.trim()}`);
+          alert(`Temporizador definido para ${timeText}`);
         } else if (timerId) {
           clearTimeout(timerId);
           timerId = null;
@@ -399,14 +363,6 @@
         menu.style.display = 'none';
         timerSubmenu.style.display = 'none';
       });
-    });
-
-    // Prevenir comportamento padrão do clique no título
-    trackTitle.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      // Foca no player ao invés de abrir link externo
-      document.querySelector('.player').scrollIntoView({ behavior: 'smooth' });
     });
 
     // Evento quando uma faixa termina
@@ -480,8 +436,6 @@
     });
 
     // Inicialização
-    setupMediaSession();
-    
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js')
