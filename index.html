@@ -44,11 +44,22 @@
       align-items: center;
       width: 100%;
       margin-bottom: 15px;
+      overflow: hidden;
+    }
+    .track-title-container {
+      flex: 1;
+      overflow: hidden;
+      white-space: nowrap;
     }
     .track-title {
       font-size: 20px; font-weight: bold;
-      text-align: center;
-      flex: 1;
+      display: inline-block;
+      padding-left: 100%;
+      animation: scrollText 15s linear infinite;
+    }
+    @keyframes scrollText {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
     }
     .menu-btn {
       background: none;
@@ -298,7 +309,9 @@
 
   <div class="player">
     <div class="track-header">
-      <div class="track-title" id="track-title">Selecione um Capítulo</div>
+      <div class="track-title-container">
+        <div class="track-title" id="track-title">Selecione um Capítulo</div>
+      </div>
       <button class="menu-btn" id="menu-btn">⋮</button>
       <div class="menu" id="menu">
         <div class="menu-item" id="timer-btn">
@@ -453,6 +466,11 @@
       trackTitle.textContent = tracks[i].dataset.title;
       currentIndex = i;
       updateMetadata();
+      
+      // Reinicia a animação do título
+      trackTitle.style.animation = 'none';
+      void trackTitle.offsetWidth; // Trigger reflow
+      trackTitle.style.animation = 'scrollText 15s linear infinite';
       
       // Só cancela o temporizador se não for avanço automático
       if (timerId && !isAutoAdvance) {
