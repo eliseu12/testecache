@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Player de Áudio</title>
+  <title>Humildade a Beleza da Santidade</title>
   <link rel="icon" id="favicon" href="https://live.staticflickr.com/65535/54488171468_d37b7e80c9_n.jpg" sizes="300x300" type="image/jpeg">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
@@ -37,29 +37,29 @@
       padding: 20px; display: flex;
       flex-direction: column; align-items: center;
       box-shadow: 0 4px 12px rgba(255,255,255,0.1);
+      position: relative;
     }
     .track-header {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
       width: 100%;
       margin-bottom: 15px;
-      overflow: hidden;
+      text-align: center;
     }
     .track-title-container {
-      flex: 1;
-      overflow: hidden;
-      white-space: nowrap;
+      position: relative;
     }
     .track-title {
       font-size: 20px; font-weight: bold;
-      display: inline-block;
-      padding-left: 100%;
-      animation: scrollText 15s linear infinite;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 30px;
     }
-    @keyframes scrollText {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-100%); }
+    .album-title {
+      font-size: 14px;
+      color: #aaa;
+      margin-top: 5px;
     }
     .menu-btn {
       background: none;
@@ -67,8 +67,10 @@
       color: white;
       font-size: 24px;
       cursor: pointer;
-      padding: 5px 10px;
-      margin-left: 10px;
+      padding: 5px;
+      position: absolute;
+      right: 0;
+      top: 0;
     }
     .menu {
       position: absolute;
@@ -79,6 +81,7 @@
       z-index: 100;
       display: none;
       right: 20px;
+      top: 60px;
       max-width: 300px;
     }
     .menu-item {
@@ -311,8 +314,9 @@
     <div class="track-header">
       <div class="track-title-container">
         <div class="track-title" id="track-title">Selecione um Capítulo</div>
+        <div class="album-title" id="album-title">Humildade a Beleza da Santidade</div>
+        <button class="menu-btn" id="menu-btn">⋮</button>
       </div>
-      <button class="menu-btn" id="menu-btn">⋮</button>
       <div class="menu" id="menu">
         <div class="menu-item" id="timer-btn">
           <span class="material-icons">brightness_3</span> Temporizador
@@ -408,6 +412,7 @@
           playIcon = document.getElementById('play-icon'),
           pauseIcon = document.getElementById('pause-icon'),
           trackTitle = document.getElementById('track-title'),
+          albumTitle = document.getElementById('album-title'),
           progressBar = document.getElementById('progress-bar'),
           progress = document.getElementById('progress'),
           currentTimeDisplay = document.getElementById('current-time'),
@@ -442,12 +447,13 @@
     // Controles do player
     function updateMetadata() {
       const title = tracks[currentIndex].dataset.title;
-      document.title = `${title} – Player de Áudio`;
+      document.title = `${title} – Humildade a Beleza da Santidade`;
       audioPlayer.playbackRate = parseFloat(speedSelect.value);
       
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
           title, 
+          artist: 'Humildade a Beleza da Santidade',
           artwork: [{src: coverImage.src, sizes: '300x300', type: 'image/jpeg'}]
         });
         navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
@@ -464,13 +470,9 @@
       tracks[i].classList.add('active');
       audioPlayer.src = tracks[i].dataset.src;
       trackTitle.textContent = tracks[i].dataset.title;
+      albumTitle.textContent = 'Humildade a Beleza da Santidade';
       currentIndex = i;
       updateMetadata();
-      
-      // Reinicia a animação do título
-      trackTitle.style.animation = 'none';
-      void trackTitle.offsetWidth; // Trigger reflow
-      trackTitle.style.animation = 'scrollText 15s linear infinite';
       
       // Só cancela o temporizador se não for avanço automático
       if (timerId && !isAutoAdvance) {
